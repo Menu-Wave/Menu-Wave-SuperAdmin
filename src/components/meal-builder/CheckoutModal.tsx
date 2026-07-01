@@ -30,23 +30,21 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
       unitPrice: g.price,
       subtotal: g.price * g.qty,
     }));
+    const params = new URLSearchParams({
+      orderNumber,
+      name,
+      order: JSON.stringify(order),
+      total: String(total),
+      currency: "NGN",
+      placedAt: new Date().toISOString(),
+    });
+    const url = `https://tenuous-serenity-unborn.ngrok-free.dev/webhook-test/eb045cc9-5e0b-489d-a3fd-160e0e5f3a3a?${params.toString()}`;
+    // Fire immediately (don't await) so the webhook is called the moment the user clicks.
+    // Use no-cors to avoid CORS preflight blocking the fire-and-forget GET.
+    fetch(url, { method: "GET", mode: "no-cors" }).catch((err) =>
+      console.error("Webhook failed", err),
+    );
     setPlaced(true);
-    try {
-      const params = new URLSearchParams({
-        orderNumber,
-        name,
-        order: JSON.stringify(order),
-        total: String(total),
-        currency: "NGN",
-        placedAt: new Date().toISOString(),
-      });
-      await fetch(
-        `https://tenuous-serenity-unborn.ngrok-free.dev/webhook-test/eb045cc9-5e0b-489d-a3fd-160e0e5f3a3a?${params.toString()}`,
-        { method: "GET" },
-      );
-    } catch (err) {
-      console.error("Webhook failed", err);
-    }
     setTimeout(() => {
       clear();
       setPlaced(false);
