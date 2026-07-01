@@ -32,20 +32,17 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
     }));
     setPlaced(true);
     try {
+      const params = new URLSearchParams({
+        orderNumber,
+        name,
+        order: JSON.stringify(order),
+        total: String(total),
+        currency: "NGN",
+        placedAt: new Date().toISOString(),
+      });
       await fetch(
-        "https://tenuous-serenity-unborn.ngrok-free.dev/webhook-test/eb045cc9-5e0b-489d-a3fd-160e0e5f3a3a",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            orderNumber,
-            name,
-            order,
-            total,
-            currency: "NGN",
-            placedAt: new Date().toISOString(),
-          }),
-        },
+        `https://tenuous-serenity-unborn.ngrok-free.dev/webhook-test/eb045cc9-5e0b-489d-a3fd-160e0e5f3a3a?${params.toString()}`,
+        { method: "GET" },
       );
     } catch (err) {
       console.error("Webhook failed", err);
