@@ -22,8 +22,34 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
     {},
   );
 
-  const handlePlace = () => {
+  const handlePlace = async () => {
+    const orderNumber = `ORD-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+    const order = Object.values(grouped).map((g) => ({
+      name: g.name,
+      quantity: g.qty,
+      unitPrice: g.price,
+      subtotal: g.price * g.qty,
+    }));
     setPlaced(true);
+    try {
+      await fetch(
+        "https://tenuous-serenity-unborn.ngrok-free.dev/webhook-test/eb045cc9-5e0b-489d-a3fd-160e0e5f3a3a",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderNumber,
+            name,
+            order,
+            total,
+            currency: "NGN",
+            placedAt: new Date().toISOString(),
+          }),
+        },
+      );
+    } catch (err) {
+      console.error("Webhook failed", err);
+    }
     setTimeout(() => {
       clear();
       setPlaced(false);
