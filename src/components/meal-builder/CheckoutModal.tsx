@@ -9,6 +9,9 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
   const name = useCart((s) => s.name);
   const clear = useCart((s) => s.clear);
   const [placed, setPlaced] = useState(false);
+  const [orderNumber, setOrderNumber] = useState<string>("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const total = cartTotal(entries);
 
   // Group duplicates
@@ -22,13 +25,54 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
     {},
   );
 
-  const handlePlace = () => {
-    setPlaced(true);
-    setTimeout(() => {
-      clear();
-      setPlaced(false);
-      onClose();
-    }, 2200);
+  const generateOrderNumber = () => {
+    const ts = Date.now().toString(36).toUpperCase();
+    const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
+    return `CR-${ts}-${rand}`;
+  };
+
+  const handlePlace = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    setError(null);
+    const newOrderNumber = generateOrderNumber();
+    const payload = {
+      orderNumber: newOrderNumber,
+      name,
+      total,
+      currency: "NGN",
+      placedAt: new Date().toISOString(),
+      items: Object.values(grouped).map((g) => ({
+        name: g.name,
+        emoji: g.emoji,
+        price: g.price,
+        quantity: g.qty,
+        subtotal: g.price * g.qty,
+      })),
+    };
+    try {
+      const res = await fetch(
+        "https://tenuous-serenity-unborn.ngrok-free.dev/webhook-test/c6725dd8-2f5f-497e-8612-0f0457b2342b",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
+      if (!res.ok) throw new Error(`Webhook returned ${res.status}`);
+      setOrderNumber(newOrderNumber);
+      setPlaced(true);
+      setTimeout(() => {
+        clear();
+        setPlaced(false);
+        setOrderNumber("");
+        setSubmitting(false);
+        onClose();
+      }, 2600);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send order");
+      setSubmitting(false);
+    }
   };
 
   return (
