@@ -149,11 +149,17 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
                   </div>
                 </div>
                 <div className="px-6 pb-6">
+                  {error && (
+                    <p className="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive">
+                      {error}
+                    </p>
+                  )}
                   <button
                     onClick={handlePlace}
-                    className="w-full rounded-xl bg-primary py-3 text-sm font-extrabold uppercase tracking-wider text-primary-foreground shadow-lg shadow-primary/30 transition hover:brightness-110 active:scale-[0.98]"
+                    disabled={submitting}
+                    className="w-full rounded-xl bg-primary py-3 text-sm font-extrabold uppercase tracking-wider text-primary-foreground shadow-lg shadow-primary/30 transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    Place Order
+                    {submitting ? "Placing…" : "Place Order"}
                   </button>
                 </div>
               </>
