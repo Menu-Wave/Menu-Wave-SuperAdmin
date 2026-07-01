@@ -1,4 +1,5 @@
 import classicChickenBurger from "@/assets/classic-chicken-burger.png.asset.json";
+import Fanta from "@/assets/Fanta.png";
 
 export type MenuItem = {
   id: number;
@@ -17,7 +18,7 @@ export const menuItems: MenuItem[] = [
   { id: 5, name: "Citizen Meal - Chicken", price: 3800.0, category: "Citizens Meals", emoji: "🍱" },
   { id: 6, name: "Citizen Meal - Fish", price: 3500.0, category: "Citizens Meals", emoji: "🍱" },
   { id: 7, name: "Coca-Cola", price: 400.0, category: "Drinks", emoji: "🥤" },
-  { id: 8, name: "Fanta", price: 400.0, category: "Drinks", emoji: "🥤" },
+  { id: 8, name: "Fanta", price: 400.0, category: "Drinks", emoji: "🥤", image: Fanta.url },
   { id: 9, name: "Sprite", price: 400.0, category: "Drinks", emoji: "🥤" },
   { id: 10, name: "Jollof Rice with Chicken", price: 3000.0, category: "POT Meals", emoji: "🍲" },
   { id: 11, name: "Fried Rice with Chicken", price: 3200.0, category: "POT Meals", emoji: "🍲" },
