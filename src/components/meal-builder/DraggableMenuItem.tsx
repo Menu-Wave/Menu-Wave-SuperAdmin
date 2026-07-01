@@ -20,8 +20,12 @@ export function DraggableMenuItem({ item }: { item: MenuItem }) {
       }}
       className="group flex w-full cursor-grab items-center gap-3 rounded-xl border border-border bg-card p-3 text-left shadow-sm transition active:cursor-grabbing hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
     >
-      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-secondary text-2xl">
-        {item.emoji}
+      <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-lg bg-secondary text-2xl">
+        {item.image ? (
+          <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+        ) : (
+          item.emoji
+        )}
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-semibold text-foreground">{item.name}</span>

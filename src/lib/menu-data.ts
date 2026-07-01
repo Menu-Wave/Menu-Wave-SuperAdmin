@@ -1,15 +1,18 @@
+import classicChickenBurger from "@/assets/classic-chicken-burger.png.asset.json";
+
 export type MenuItem = {
   id: number;
   name: string;
   price: number;
   category: string;
   emoji: string;
+  image?: string;
 };
 
 export const menuItems: MenuItem[] = [
   { id: 1, name: "Bigwhizz Reloaded", price: 6400.36, category: "Top Sellers", emoji: "🍔" },
   { id: 2, name: "Refuel Max Combo", price: 3130.0, category: "Top Sellers", emoji: "🍗" },
-  { id: 3, name: "Classic Chicken Burger", price: 2500.0, category: "Burgers & Sandwiches", emoji: "🍔" },
+  { id: 3, name: "Classic Chicken Burger", price: 2500.0, category: "Burgers & Sandwiches", emoji: "🍔", image: classicChickenBurger.url },
   { id: 4, name: "Spicy Chicken Sandwich", price: 2200.0, category: "Burgers & Sandwiches", emoji: "🥪" },
   { id: 5, name: "Citizen Meal - Chicken", price: 3800.0, category: "Citizens Meals", emoji: "🍱" },
   { id: 6, name: "Citizen Meal - Fish", price: 3500.0, category: "Citizens Meals", emoji: "🍱" },

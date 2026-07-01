@@ -41,7 +41,15 @@ function TrayItem({ entry }: { entry: CartEntry }) {
         className="relative grid h-full w-full cursor-grab place-items-center rounded-2xl bg-white text-4xl shadow-[0_6px_14px_rgba(0,0,0,0.18)] ring-1 ring-black/5 transition active:cursor-grabbing hover:scale-105"
         title={`${entry.item.name} — ${formatNaira(entry.item.price)}`}
       >
-        <span className="pointer-events-none select-none">{entry.item.emoji}</span>
+        {entry.item.image ? (
+          <img
+            src={entry.item.image}
+            alt={entry.item.name}
+            className="pointer-events-none h-full w-full select-none rounded-2xl object-cover"
+          />
+        ) : (
+          <span className="pointer-events-none select-none">{entry.item.emoji}</span>
+        )}
         <span className="pointer-events-none absolute -bottom-1 left-1/2 max-w-[90px] -translate-x-1/2 truncate rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-semibold text-white opacity-0 transition group-hover:opacity-100">
           {entry.item.name}
         </span>
