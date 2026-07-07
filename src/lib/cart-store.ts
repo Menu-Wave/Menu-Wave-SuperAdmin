@@ -39,6 +39,13 @@ export const useCart = create<CartState>((set) => ({
       entries: s.entries.map((e) => (e.uid === uid ? { ...e, x, y } : e)),
     })),
   remove: (uid) => set((s) => ({ entries: s.entries.filter((e) => e.uid !== uid) })),
+  restore: (entry, index) =>
+    set((s) => {
+      if (s.entries.some((e) => e.uid === entry.uid)) return s;
+      const next = s.entries.slice();
+      next.splice(Math.max(0, Math.min(index, next.length)), 0, entry);
+      return { entries: next };
+    }),
   clear: () => set({ entries: [] }),
   setName: (name) => set({ name }),
 }));
