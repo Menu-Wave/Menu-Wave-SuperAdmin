@@ -14,6 +14,7 @@ type CartState = {
   add: (item: MenuItem, x: number, y: number) => void;
   move: (uid: string, x: number, y: number) => void;
   remove: (uid: string) => void;
+  restore: (entry: CartEntry, index: number) => void;
   clear: () => void;
   setName: (n: string) => void;
 };
