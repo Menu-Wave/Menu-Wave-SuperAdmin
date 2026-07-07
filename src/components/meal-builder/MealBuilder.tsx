@@ -9,6 +9,8 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { useState } from "react";
+import { toast } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 import { MenuPanel } from "./MenuPanel";
 import { DropZone, ITEM_SIZE } from "./DropZone";
 import { CheckoutBar } from "./CheckoutBar";
@@ -18,6 +20,8 @@ import { formatNaira } from "@/lib/menu-data";
 
 export function MealBuilder() {
   const move = useCart((s) => s.move);
+  const remove = useCart((s) => s.remove);
+  const restore = useCart((s) => s.restore);
   const entries = useCart((s) => s.entries);
   const [active, setActive] = useState<MenuItem | null>(null);
 
