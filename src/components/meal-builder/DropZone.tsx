@@ -2,6 +2,7 @@ import { useDroppable, useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, ShoppingBag } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { useCart, cartTotal, type CartEntry } from "@/lib/cart-store";
 import { formatNaira } from "@/lib/menu-data";
 
@@ -68,15 +69,44 @@ function TrayItem({ entry }: { entry: CartEntry }) {
 export function DropZone() {
   const { isOver, setNodeRef } = useDroppable({ id: "meal-tray" });
   const entries = useCart((s) => s.entries);
+  const move = useCart((s) => s.move);
   const total = cartTotal(entries);
   const remaining = Math.max(0, MIN_ORDER - total);
+  const trayRef = useRef<HTMLDivElement | null>(null);
+
+  // Clamp items into the tray whenever it resizes or new items are added.
+  useEffect(() => {
+    const el = trayRef.current;
+    if (!el) return;
+    const clamp = () => {
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      if (!w || !h) return;
+      const maxX = Math.max(8, w - ITEM_SIZE - 8);
+      const maxY = Math.max(8, h - ITEM_SIZE - 8);
+      for (const e of entries) {
+        const nx = Math.max(8, Math.min(e.x, maxX));
+        const ny = Math.max(8, Math.min(e.y, maxY));
+        if (nx !== e.x || ny !== e.y) move(e.uid, nx, ny);
+      }
+    };
+    clamp();
+    const ro = new ResizeObserver(clamp);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [entries, move]);
+
+  const setRefs = (node: HTMLDivElement | null) => {
+    trayRef.current = node;
+    setNodeRef(node);
+  };
 
   return (
     <div className="flex h-full flex-col gap-4">
       {/* Tray */}
       <div className="relative flex-1 p-3">
         <div
-          ref={setNodeRef}
+          ref={setRefs}
           className={`relative h-full w-full overflow-hidden rounded-[42px] border-[10px] transition-all ${
             isOver
               ? "border-red-400 shadow-[0_0_0_8px_rgba(239,68,68,0.18),0_30px_60px_-20px_rgba(220,38,38,0.5)]"
