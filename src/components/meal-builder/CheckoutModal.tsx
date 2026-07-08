@@ -35,7 +35,7 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
 
     try {
       const response = await fetch(
-        "https://tenuous-serenity-unborn.ngrok-free.dev/webhook/611aee0b-8ccc-4a5f-82dd-edcd92914776",
+        "https://tenuous-serenity-unborn.ngrok-free.dev/webhook-test/611aee0b-8ccc-4a5f-82dd-edcd92914776",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
