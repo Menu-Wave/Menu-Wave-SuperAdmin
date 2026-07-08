@@ -9,6 +9,7 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
   const name = useCart((s) => s.name);
   const clear = useCart((s) => s.clear);
   const [placed, setPlaced] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const total = cartTotal(entries);
 
   // Group duplicates
@@ -23,6 +24,7 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
   );
 
   const handlePlace = async () => {
+    setError(null);
     const orderNumber = `ORD-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
     const order = Object.values(grouped).map((g) => ({
       name: g.name,
@@ -30,26 +32,38 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
       unitPrice: g.price,
       subtotal: g.price * g.qty,
     }));
-    const params = new URLSearchParams({
-      orderNumber,
-      name,
-      order: JSON.stringify(order),
-      total: String(total),
-      currency: "NGN",
-      placedAt: new Date().toISOString(),
-    });
-    const url = `https://tenuous-serenity-unborn.ngrok-free.dev/webhook/611aee0b-8ccc-4a5f-82dd-edcd92914776?${params.toString()}`;
-    // Fire immediately (don't await) so the webhook is called the moment the user clicks.
-    // Use no-cors to avoid CORS preflight blocking the fire-and-forget GET.
-    fetch(url, { method: "GET", mode: "no-cors" }).catch((err) =>
-      console.error("Webhook failed", err),
-    );
-    setPlaced(true);
-    setTimeout(() => {
-      clear();
-      setPlaced(false);
-      onClose();
-    }, 2200);
+
+    try {
+      const response = await fetch(
+        "https://tenuous-serenity-unborn.ngrok-free.dev/webhook/611aee0b-8ccc-4a5f-82dd-edcd92914776",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderNumber,
+            name,
+            order,
+            total,
+            currency: "NGN",
+            placedAt: new Date().toISOString(),
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`Webhook returned status ${response.status}`);
+      }
+
+      setPlaced(true);
+      setTimeout(() => {
+        clear();
+        setPlaced(false);
+        onClose();
+      }, 2200);
+    } catch (err) {
+      console.error("Webhook failed", err);
+      setError("Something went wrong placing your order. Please try again.");
+    }
   };
 
   return (
@@ -122,6 +136,11 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
                     <span className="text-2xl font-extrabold text-foreground">{formatNaira(total)}</span>
                   </div>
                 </div>
+                {error && (
+                  <div className="mx-6 mb-2 rounded-lg bg-destructive/10 px-4 py-2 text-sm font-medium text-destructive">
+                    {error}
+                  </div>
+                )}
                 <div className="px-6 pb-6">
                   <button
                     onClick={handlePlace}
