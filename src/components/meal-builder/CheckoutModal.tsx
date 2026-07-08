@@ -1,8 +1,11 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
-import { Check, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Check, X, Clock, ChefHat, Bell } from "lucide-react";
 import { useCart, cartTotal } from "@/lib/cart-store";
 import { formatNaira } from "@/lib/menu-data";
+import { supabase } from "@/lib/supabase";
+
+type OrderStage = "new" | "preparing" | "ready" | "done";
 
 export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const entries = useCart((s) => s.entries);
@@ -10,9 +13,10 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
   const clear = useCart((s) => s.clear);
   const [placed, setPlaced] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [orderId, setOrderId] = useState<number | null>(null);
+  const [status, setStatus] = useState<OrderStage>("new");
   const total = cartTotal(entries);
 
-  // Group duplicates
   const grouped = entries.reduce<Record<number, { name: string; emoji: string; price: number; qty: number }>>(
     (acc, e) => {
       const k = e.item.id;
@@ -22,6 +26,34 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
     },
     {},
   );
+
+  // Subscribe to Realtime updates for this specific order once we have an id
+  useEffect(() => {
+    if (!orderId) return;
+
+    const channel = supabase
+      .channel(`order-${orderId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "Republic_Data",
+          filter: `id=eq.${orderId}`,
+        },
+        (payload) => {
+          const newStatus = (payload.new as { Status?: string }).Status?.toLowerCase();
+          if (newStatus === "preparing") setStatus("preparing");
+          else if (newStatus === "ready") setStatus("ready");
+          else if (newStatus === "done") setStatus("done");
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [orderId]);
 
   const handlePlace = async () => {
     setError(null);
@@ -54,16 +86,26 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
         throw new Error(`Webhook returned status ${response.status}`);
       }
 
+      const data = await response.json();
+      // Expecting n8n to respond with { id: <supabase row id> }
+      if (data?.id) {
+        setOrderId(data.id);
+      }
+
       setPlaced(true);
-      setTimeout(() => {
-        clear();
-        setPlaced(false);
-        onClose();
-      }, 2200);
+      setStatus("new");
     } catch (err) {
       console.error("Webhook failed", err);
       setError("Something went wrong placing your order. Please try again.");
     }
+  };
+
+  const handleCloseAfterDone = () => {
+    clear();
+    setPlaced(false);
+    setOrderId(null);
+    setStatus("new");
+    onClose();
   };
 
   return (
@@ -73,7 +115,7 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onClick={onClose}
+          onClick={placed ? undefined : onClose}
           className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4 backdrop-blur-sm"
         >
           <motion.div
@@ -86,18 +128,51 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
           >
             {placed ? (
               <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 300 }}
-                  className="grid h-20 w-20 place-items-center rounded-full bg-primary text-primary-foreground"
-                >
-                  <Check className="h-10 w-10" strokeWidth={3} />
-                </motion.div>
-                <h3 className="mt-4 text-2xl font-extrabold text-foreground">Order Placed!</h3>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Thank you, {name}. Your meal is on the way.
-                </p>
+                {status === "done" || status === "ready" ? (
+                  <>
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", stiffness: 300 }}
+                      className="grid h-20 w-20 place-items-center rounded-full bg-primary text-primary-foreground"
+                    >
+                      <Bell className="h-10 w-10" strokeWidth={2.5} />
+                    </motion.div>
+                    <h3 className="mt-4 text-2xl font-extrabold text-foreground">
+                      Your order is ready!
+                    </h3>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Please proceed to the counter to collect your meal, {name}.
+                    </p>
+                    <button
+                      onClick={handleCloseAfterDone}
+                      className="mt-6 rounded-xl bg-primary px-6 py-2 text-sm font-bold text-primary-foreground"
+                    >
+                      Got it
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <motion.div
+                      animate={{ rotate: status === "preparing" ? 360 : 0 }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                      className="grid h-20 w-20 place-items-center rounded-full bg-secondary text-foreground"
+                    >
+                      {status === "preparing" ? (
+                        <ChefHat className="h-10 w-10" />
+                      ) : (
+                        <Clock className="h-10 w-10" />
+                      )}
+                    </motion.div>
+                    <h3 className="mt-4 text-2xl font-extrabold text-foreground">
+                      {status === "preparing" ? "Preparing your meal" : "Order received!"}
+                    </h3>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Thank you, {name}. {orderId ? `Order #${orderId}. ` : ""}
+                      We'll notify you the moment it's ready — feel free to stay on this screen.
+                    </p>
+                  </>
+                )}
               </div>
             ) : (
               <>
