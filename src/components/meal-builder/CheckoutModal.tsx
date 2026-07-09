@@ -10,12 +10,14 @@ type OrderStage = "new" | "preparing" | "ready" | "done";
 export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const entries = useCart((s) => s.entries);
   const name = useCart((s) => s.name);
+  const tableNumber = useCart((s) => s.tableNumber);
   const clear = useCart((s) => s.clear);
   const [placed, setPlaced] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<number | null>(null);
   const [status, setStatus] = useState<OrderStage>("new");
   const total = cartTotal(entries);
+  const tableNum = Number(tableNumber);
 
   const grouped = entries.reduce<Record<number, { name: string; emoji: string; price: number; qty: number }>>(
     (acc, e) => {
@@ -57,6 +59,10 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
 
   const handlePlace = async () => {
     setError(null);
+    if (!Number.isInteger(tableNum) || tableNum < 1 || tableNum > 50) {
+      setError("Please check your table number and try again. Valid table numbers are 1–50.");
+      return;
+    }
     const orderNumber = `ORD-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
     const order = Object.values(grouped).map((g) => ({
       name: g.name,
@@ -74,6 +80,7 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
           body: JSON.stringify({
             orderNumber,
             name,
+            table_number: tableNum,
             order,
             total,
             currency: "NGN",
@@ -139,7 +146,7 @@ if (orderRow?.id) {
                       <Bell className="h-10 w-10" strokeWidth={2.5} />
                     </motion.div>
                     <h3 className="mt-4 text-2xl font-extrabold text-foreground">
-                      Your order is ready!
+                      Table {tableNum} · Your order is ready!
                     </h3>
                     <p className="mt-2 text-sm text-muted-foreground">
                       Please proceed to the counter to collect your meal, {name}.
@@ -165,7 +172,7 @@ if (orderRow?.id) {
                       )}
                     </motion.div>
                     <h3 className="mt-4 text-2xl font-extrabold text-foreground">
-                      {status === "preparing" ? "Preparing your meal" : "Order received!"}
+                      Table {tableNum} · {status === "preparing" ? "Preparing your meal" : "Order received"}
                     </h3>
                     <p className="mt-2 text-sm text-muted-foreground">
                       Thank you, {name}. {orderId ? `Order #${orderId}. ` : ""}
