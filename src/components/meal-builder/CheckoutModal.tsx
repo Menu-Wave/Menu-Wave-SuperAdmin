@@ -59,6 +59,10 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
 
   const handlePlace = async () => {
     setError(null);
+    if (!Number.isInteger(tableNum) || tableNum < 1 || tableNum > 50) {
+      setError("Please check your table number and try again. Valid table numbers are 1–50.");
+      return;
+    }
     const orderNumber = `ORD-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
     const order = Object.values(grouped).map((g) => ({
       name: g.name,
