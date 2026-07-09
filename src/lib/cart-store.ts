@@ -51,6 +51,7 @@ export const useCart = create<CartState>((set) => ({
     }),
   clear: () => set({ entries: [] }),
   setName: (name) => set({ name }),
+  setTableNumber: (tableNumber) => set({ tableNumber }),
 }));
 
 export const cartTotal = (entries: CartEntry[]) =>
