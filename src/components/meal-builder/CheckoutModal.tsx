@@ -146,7 +146,7 @@ if (orderRow?.id) {
                       <Bell className="h-10 w-10" strokeWidth={2.5} />
                     </motion.div>
                     <h3 className="mt-4 text-2xl font-extrabold text-foreground">
-                      Your order is ready!
+                      Table {tableNum} · Your order is ready!
                     </h3>
                     <p className="mt-2 text-sm text-muted-foreground">
                       Please proceed to the counter to collect your meal, {name}.
