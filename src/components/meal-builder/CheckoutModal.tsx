@@ -5,9 +5,7 @@ import { useCart, cartTotal } from "@/lib/cart-store";
 import { formatNaira } from "@/lib/menu-data";
 import { supabase } from "@/lib/supabase";
 
-const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpiaGxmbHhmdmVmZ3ViYmp1ZGFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4MzQxODksImV4cCI6MjA5ODQxMDE4OX0.zzYSmhQyA4rj0q_LQL-tI8e4VxAjQKZPwgR4heOx45k";
-
+const SUPABASE_ANON_KEY = "sb_publishable_yBQbpGGMjBRDqwkID4QfvA_9amBX3Xx";
 type OrderStage = "new" | "preparing" | "ready" | "done";
 
 export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () => void }) {
