@@ -172,7 +172,7 @@ if (orderRow?.id) {
                       )}
                     </motion.div>
                     <h3 className="mt-4 text-2xl font-extrabold text-foreground">
-                      {status === "preparing" ? "Preparing your meal" : "Order received!"}
+                      Table {tableNum} · {status === "preparing" ? "Preparing your meal" : "Order received"}
                     </h3>
                     <p className="mt-2 text-sm text-muted-foreground">
                       Thank you, {name}. {orderId ? `Order #${orderId}. ` : ""}
