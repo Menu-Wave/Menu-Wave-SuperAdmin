@@ -11,12 +11,14 @@ export type CartEntry = {
 type CartState = {
   entries: CartEntry[];
   name: string;
+  tableNumber: string;
   add: (item: MenuItem, x: number, y: number) => void;
   move: (uid: string, x: number, y: number) => void;
   remove: (uid: string) => void;
   restore: (entry: CartEntry, index: number) => void;
   clear: () => void;
   setName: (n: string) => void;
+  setTableNumber: (n: string) => void;
 };
 
 export const useCart = create<CartState>((set) => ({
