@@ -24,6 +24,7 @@ type CartState = {
 export const useCart = create<CartState>((set) => ({
   entries: [],
   name: "",
+  tableNumber: "",
   add: (item, x, y) =>
     set((s) => ({
       entries: [
