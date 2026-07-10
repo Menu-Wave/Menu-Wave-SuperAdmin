@@ -127,6 +127,7 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
       if (orderRow?.id) {
         setOrderId(orderRow.id);
       }
+      setOrderNumber(orderRow?.orderNumber ?? orderRow?.order_number ?? newOrderNumber);
 
       setPlaced(true);
       setStatus("new");
