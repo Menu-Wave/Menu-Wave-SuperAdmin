@@ -208,7 +208,7 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
                       Table {tableNum} · {status === "preparing" ? "Preparing your meal" : "Order received"}
                     </h3>
                     <p className="mt-2 text-sm text-muted-foreground">
-                      Thank you, {name}. {orderId ? `Order #${orderId}. ` : ""}
+                      Thank you, {name}. {orderNumber ? `Order ${orderNumber}. ` : ""}
                       We'll notify you the moment it's ready — feel free to stay on this screen.
                     </p>
                     {!connected && (
