@@ -62,10 +62,12 @@ function TrayItem({ entry }: { entry: CartEntry }) {
       <button
         {...listeners}
         {...attributes}
-        className={`relative grid h-full w-full touch-none place-items-center rounded-2xl bg-white text-4xl ring-1 ring-black/5 transition-shadow ${
+        className={`relative grid h-full w-full touch-none place-items-center rounded-2xl text-4xl transition-shadow ${
+          entry.item.image ? "bg-transparent" : "bg-white ring-1 ring-black/5"
+        } ${
           isDragging
-            ? "cursor-grabbing shadow-[0_0_0_4px_rgba(255,255,255,0.6),0_20px_40px_rgba(0,0,0,0.35)]"
-            : "cursor-grab shadow-[0_6px_14px_rgba(0,0,0,0.18)]"
+            ? "cursor-grabbing"
+            : "cursor-grab"
         }`}
         aria-label={`${entry.item.name}, ${formatNaira(entry.item.price)}. Drag to reposition. Swipe left or right to remove.`}
       >
@@ -73,12 +75,13 @@ function TrayItem({ entry }: { entry: CartEntry }) {
           <img
             src={entry.item.image}
             alt={entry.item.name}
-            className="pointer-events-none h-full w-full select-none rounded-2xl object-cover"
+            className="pointer-events-none h-full w-full select-none object-contain"
             draggable={false}
           />
         ) : (
           <span className="pointer-events-none select-none">{entry.item.emoji}</span>
         )}
+
         <span
           className={`pointer-events-none absolute -bottom-1.5 left-1/2 max-w-[100px] -translate-x-1/2 truncate rounded-full bg-black/80 px-2 py-0.5 text-[10px] font-semibold text-white transition ${
             isDragging ? "opacity-100" : "opacity-0 group-hover:opacity-100"
