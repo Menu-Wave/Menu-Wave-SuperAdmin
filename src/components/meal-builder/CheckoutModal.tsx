@@ -32,6 +32,7 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<number | null>(null);
+  const [orderCode, setOrderCode] = useState<string | null>(null);
   const [status, setStatus] = useState<OrderStage>("new");
   const [connected, setConnected] = useState(true);
   const total = cartTotal(entries);
@@ -47,7 +48,6 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
     {},
   );
 
-  // Subscribe to Realtime updates for this specific order once we have an id
   useEffect(() => {
     if (!orderId) return;
 
@@ -126,6 +126,9 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
       if (orderRow?.id) {
         setOrderId(orderRow.id);
       }
+      if (orderRow?.public_code) {
+        setOrderCode(orderRow.public_code);
+      }
 
       setPlaced(true);
       setStatus("new");
@@ -141,6 +144,7 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
     clear();
     setPlaced(false);
     setOrderId(null);
+    setOrderCode(null);
     setStatus("new");
     onClose();
   };
@@ -205,7 +209,7 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
                       Table {tableNum} · {status === "preparing" ? "Preparing your meal" : "Order received"}
                     </h3>
                     <p className="mt-2 text-sm text-muted-foreground">
-                      Thank you, {name}. {orderId ? `Order #${orderId}. ` : ""}
+                      Thank you, {name}. {orderCode ? `Order ${orderCode}. ` : ""}
                       We'll notify you the moment it's ready — feel free to stay on this screen.
                     </p>
                     {!connected && (
@@ -274,4 +278,4 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
       )}
     </AnimatePresence>
   );
-}
+    }
