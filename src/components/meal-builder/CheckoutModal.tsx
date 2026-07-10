@@ -108,7 +108,7 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
             Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
           },
           body: JSON.stringify({
-            orderNumber,
+            orderNumber: newOrderNumber,
             name,
             table_number: tableNum,
             order,
