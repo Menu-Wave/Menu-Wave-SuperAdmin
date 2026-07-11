@@ -27,30 +27,6 @@ export type MenuItem = {
   image?: string;
 };
 
-export const menuItems: MenuItem[] = [
-  { id: 1, name: "Bigwhizz Reloaded", price: 6400.36, category: "Top Sellers", emoji: "🍔", image: burger.url },
-  { id: 2, name: "Refuel Max Combo", price: 3130.0, category: "Top Sellers", emoji: "🍗", image: refuelMeal.url },
-  { id: 3, name: "Classic Chicken Burger", price: 2500.0, category: "Burgers & Sandwiches", emoji: "🍔", image: classicChickenBurger.url },
-  { id: 4, name: "Bread", price: 2200.0, category: "Burgers & Sandwiches", emoji: "🥪", image: bread.url },
-  { id: 5, name: "Fried Chicken", price: 3800.0, category: "Citizens Meals", emoji: "🍱", image: friedChicken.url },
-  { id: 6, name: "Citizen Meal -Moi-moi", price: 3500.0, category: "Citizens Meals", emoji: "🍱", image: moiMoi.url },
-  { id: 7, name: "Coca-Cola", price: 400.0, category: "Drinks", emoji: "🥤", image: coke.url },
-  { id: 8, name: "Fanta", price: 400.0, category: "Drinks", emoji: "🥤", image: fanta.url },
-  { id: 9, name: "Sprite", price: 400.0, category: "Drinks", emoji: "🥤" },
-  { id: 10, name: "Table Water", price: 300.0, category: "Drinks", emoji: "💧", image: tableWater.url },
-  { id: 11, name: "Jollof Rice with Chicken", price: 3000.0, category: "POT Meals", emoji: "🍲", image: jollofChicken.url },
-  { id: 12, name: "Fried Rice with Chicken", price: 3200.0, category: "POT Meals", emoji: "🍲", image: friedRice.url },
-  { id: 13, name: "Jollof Rice", price: 1800.0, category: "POT Meals", emoji: "🍚", image: jollofRice.url },
-  { id: 14, name: "Spaghetti", price: 2000.0, category: "POT Meals", emoji: "🍝", image: spag.url },
-  { id: 15, name: "The Pot Special", price: 4500.0, category: "POT Meals", emoji: "🍲", image: thePot.url },
-  { id: 16, name: "French Fries", price: 800.0, category: "Tasty Sides", emoji: "🍟", image: potatoFries.url },
-  { id: 17, name: "Coleslaw", price: 500.0, category: "Tasty Sides", emoji: "🥗", image: coleslaw.url },
-  { id: 18, name: "Plantain", price: 600.0, category: "Tasty Sides", emoji: "🍌", image: plantain.url },
-  { id: 19, name: "Fried Yam", price: 700.0, category: "Tasty Sides", emoji: "🍠", image: friedYam.url },
-  { id: 20, name: "Moi-Moi", price: 500.0, category: "Tasty Sides", emoji: "🫘", image: moiMoi.url },
-  { id: 21, name: "Pepper Sauce", price: 300.0, category: "Tasty Sides", emoji: "🌶️", image: pepperSauce.url },
-];
-
 export const categories = [
   "Top Sellers",
   "Burgers & Sandwiches",
@@ -68,6 +44,33 @@ export const categoryIcons: Record<string, string> = {
   "POT Meals": "🍲",
   "Tasty Sides": "🍟",
 };
+
+// Local image assets keyed by menu item name (case-insensitive match).
+export const imageByName: Record<string, string> = {
+  "bigwhizz reloaded": burger.url,
+  "refuel max combo": refuelMeal.url,
+  "classic chicken burger": classicChickenBurger.url,
+  bread: bread.url,
+  "fried chicken": friedChicken.url,
+  "citizen meal -moi-moi": moiMoi.url,
+  "coca-cola": coke.url,
+  fanta: fanta.url,
+  "table water": tableWater.url,
+  "jollof rice with chicken": jollofChicken.url,
+  "fried rice with chicken": friedRice.url,
+  "jollof rice": jollofRice.url,
+  spaghetti: spag.url,
+  "the pot special": thePot.url,
+  "french fries": potatoFries.url,
+  coleslaw: coleslaw.url,
+  plantain: plantain.url,
+  "fried yam": friedYam.url,
+  "moi-moi": moiMoi.url,
+  "pepper sauce": pepperSauce.url,
+};
+
+export const imageForName = (name: string): string | undefined =>
+  imageByName[name.trim().toLowerCase()];
 
 export const formatNaira = (n: number) =>
   `₦${n.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
