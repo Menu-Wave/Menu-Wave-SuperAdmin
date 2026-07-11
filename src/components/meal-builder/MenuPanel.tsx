@@ -23,6 +23,12 @@ export function MenuPanel() {
         <p className="text-xs text-muted-foreground">Drag items to your tray →</p>
       </div>
       <div className="flex-1 space-y-2 overflow-y-auto p-3">
+        {loading && (
+          <p className="px-2 py-3 text-xs text-muted-foreground">Loading menu…</p>
+        )}
+        {error && (
+          <p className="px-2 py-3 text-xs text-destructive">Failed to load menu: {error}</p>
+        )}
         {categories.map((cat) => {
           const isOpen = open[cat] ?? false;
           return (
