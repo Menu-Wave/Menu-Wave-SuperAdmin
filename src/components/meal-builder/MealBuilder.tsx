@@ -82,7 +82,7 @@ export function MealBuilder() {
             </div>
             <div className="min-w-0 flex-1">
               <h1 className="truncate text-base font-extrabold leading-tight text-foreground sm:text-lg">
-                Chicken Republic
+                My Kitchen 
               </h1>
               <p className="truncate text-xs text-muted-foreground">Tap items · arrange your tray</p>
             </div>
