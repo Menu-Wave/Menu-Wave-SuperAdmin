@@ -2,9 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase, type RepublicDataRow } from "@/lib/supabase";
 
-export const Route = createFileRoute("/republic-data")({
+export const Route = createFileRoute("/orders")({
   head: () => ({
-    meta: [{ title: "Staff Dashboard · Republic Orders" }],
+    meta: [{ title: "Staff Dashboard · Kitchen Orders" }],
   }),
   component: RepublicDataPage,
 });
@@ -38,7 +38,7 @@ function RepublicDataPage() {
     let mounted = true;
 
     supabase
-      .from("Republic_Data")
+      .from("orders")
       .select("*")
       .order("created_at", { ascending: false })
       .then(({ data, error }) => {
@@ -48,10 +48,10 @@ function RepublicDataPage() {
       });
 
     const channel = supabase
-      .channel("republic-data-orders")
+      .channel("kitchen-data-orders")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "Republic_Data" },
+        { event: "*", schema: "public", table: "orders" },
         (payload) => {
           setRows((prev) => {
             const list = prev ?? [];
