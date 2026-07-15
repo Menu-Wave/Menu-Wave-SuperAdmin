@@ -86,7 +86,7 @@ serve(async (req) => {
   const supabase = createClient(supabaseUrl, serviceKey);
 
   const { data, error } = await supabase
-    .from("Republic_Data")
+    .from("orders")
     .insert({
       Name: name,
       Order: summarizeOrder(order),
