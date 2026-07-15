@@ -4,7 +4,7 @@ import { supabase, type RepublicDataRow } from "@/lib/supabase";
 
 export const Route = createFileRoute("/republic-data")({
   head: () => ({
-    meta: [{ title: "Staff Dashboard · Kitchen Orders" }],
+    meta: [{ title: "Staff Dashboard · Republic Orders" }],
   }),
   component: RepublicDataPage,
 });
@@ -38,7 +38,7 @@ function RepublicDataPage() {
     let mounted = true;
 
     supabase
-      .from("orders")
+      .from("Republic_Data")
       .select("*")
       .order("created_at", { ascending: false })
       .then(({ data, error }) => {
@@ -48,10 +48,10 @@ function RepublicDataPage() {
       });
 
     const channel = supabase
-      .channel("kitchen-data-orders")
+      .channel("republic-data-orders")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "orders" },
+        { event: "*", schema: "public", table: "Republic_Data" },
         (payload) => {
           setRows((prev) => {
             const list = prev ?? [];
