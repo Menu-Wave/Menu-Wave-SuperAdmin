@@ -16,9 +16,9 @@ import { DropZone, ITEM_SIZE } from "./DropZone";
 import { CheckoutBar } from "./CheckoutBar";
 import { useCart } from "@/lib/cart-store";
 import type { MenuItem } from "@/lib/menu-data";
-import { formatNaira } from "@/lib/menu-data";
+import { formatCurrency, type Restaurant } from "@/lib/supabase";
 
-export function MealBuilder() {
+export function MealBuilder({ restaurant }: { restaurant: Restaurant }) {
   const move = useCart((s) => s.move);
   const remove = useCart((s) => s.remove);
   const restore = useCart((s) => s.restore);
@@ -43,12 +43,11 @@ export function MealBuilder() {
     const entry = entries.find((x) => x.uid === uid);
     if (!entry) return;
 
-    // Swipe-to-remove: fast, mostly-horizontal drag
     if (Math.abs(e.delta.x) > 110 && Math.abs(e.delta.y) < 60) {
       const idx = entries.findIndex((x) => x.uid === uid);
       remove(uid);
       toast(`${entry.item.name} removed`, {
-        description: formatNaira(entry.item.price),
+        description: formatCurrency(entry.item.price, restaurant.currency),
         action: { label: "Undo", onClick: () => restore(entry, idx) },
         duration: 4000,
       });
@@ -68,21 +67,16 @@ export function MealBuilder() {
   };
 
   return (
-    <DndContext
-      sensors={sensors}
-      onDragStart={onStart}
-      onDragEnd={onEnd}
-      onDragCancel={() => setActive(null)}
-    >
+    <DndContext sensors={sensors} onDragStart={onStart} onDragEnd={onEnd} onDragCancel={() => setActive(null)}>
       <div className="flex min-h-screen flex-col bg-background">
         <header className="border-b border-border bg-card">
           <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3">
             <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary text-xl text-primary-foreground shadow-md shadow-primary/30">
-              🍗
+              🍽️
             </div>
             <div className="min-w-0 flex-1">
               <h1 className="truncate text-base font-extrabold leading-tight text-foreground sm:text-lg">
-                My Kitchen 
+                {restaurant.name}
               </h1>
               <p className="truncate text-xs text-muted-foreground">Tap items · arrange your tray</p>
             </div>
@@ -91,17 +85,16 @@ export function MealBuilder() {
 
         <main className="mx-auto w-full max-w-7xl flex-1 px-3 py-3 sm:px-4 sm:py-6">
           <div className="flex flex-col gap-3 lg:grid lg:h-[calc(100vh-220px)] lg:min-h-[560px] lg:grid-cols-[minmax(280px,30%)_1fr] lg:gap-4">
-            {/* Tray first on mobile so users see where taps land */}
             <div className="order-1 h-[46vh] min-h-[300px] lg:order-2 lg:h-auto">
-              <DropZone />
+              <DropZone currency={restaurant.currency} />
             </div>
             <div className="order-2 min-h-[320px] lg:order-1 lg:h-auto">
-              <MenuPanel />
+              <MenuPanel restaurantId={restaurant.id} currency={restaurant.currency} />
             </div>
           </div>
         </main>
 
-        <CheckoutBar />
+        <CheckoutBar restaurant={restaurant} />
       </div>
 
       <DragOverlay dropAnimation={null}>
@@ -113,7 +106,7 @@ export function MealBuilder() {
               <span>{active.emoji}</span>
             )}
             <span className="sr-only">
-              {active.name} {formatNaira(active.price)}
+              {active.name} {formatCurrency(active.price, restaurant.currency)}
             </span>
           </div>
         )}
