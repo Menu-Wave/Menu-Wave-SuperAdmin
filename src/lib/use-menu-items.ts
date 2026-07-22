@@ -18,17 +18,23 @@ type Row = {
   is_available: boolean | null;
 };
 
-export function useCategories() {
+// Anon customers are NOT auto-scoped by RLS to a single restaurant the way
+// logged-in staff are — every query here explicitly filters by restaurantId.
+
+export function useCategories(restaurantId: number | null) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (restaurantId == null) return;
     let cancelled = false;
+    setLoading(true);
     (async () => {
       const { data, error } = await supabase
         .from("categories")
         .select("id, name, display_order")
+        .eq("restaurant_id", restaurantId)
         .order("display_order");
       if (cancelled) return;
       if (error) {
@@ -42,22 +48,25 @@ export function useCategories() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [restaurantId]);
 
   return { categories, loading, error };
 }
 
-export function useMenuItems() {
+export function useMenuItems(restaurantId: number | null) {
   const [items, setItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (restaurantId == null) return;
     let cancelled = false;
+    setLoading(true);
     (async () => {
       const { data, error } = await supabase
         .from("menu_items")
-        .select("id, name, price, category, emoji, image_url, is_available");
+        .select("id, name, price, category, emoji, image_url, is_available")
+        .eq("restaurant_id", restaurantId);
       if (cancelled) return;
       if (error) {
         setError(error.message);
@@ -82,7 +91,7 @@ export function useMenuItems() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [restaurantId]);
 
   return { items, loading, error };
-                                                                            }
+}
