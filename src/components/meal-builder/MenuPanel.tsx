@@ -4,9 +4,9 @@ import { type MenuItem } from "@/lib/menu-data";
 import { useMenuItems, useCategories } from "@/lib/use-menu-items";
 import { DraggableMenuItem } from "./DraggableMenuItem";
 
-export function MenuPanel() {
-  const { items, loading, error } = useMenuItems();
-  const { categories, loading: categoriesLoading } = useCategories();
+export function MenuPanel({ restaurantId, currency = "NGN" }: { restaurantId: number; currency?: string }) {
+  const { items, loading, error } = useMenuItems(restaurantId);
+  const { categories, loading: categoriesLoading } = useCategories(restaurantId);
   const [open, setOpen] = useState<Record<string, boolean>>({});
 
   const grouped = useMemo(() => {
@@ -51,7 +51,7 @@ export function MenuPanel() {
               {isOpen && (
                 <div className="space-y-2 p-2">
                   {(grouped[cat.name] ?? []).map((item) => (
-                    <DraggableMenuItem key={item.id} item={item} />
+                    <DraggableMenuItem key={item.id} item={item} currency={currency} />
                   ))}
                   {(grouped[cat.name] ?? []).length === 0 && (
                     <p className="px-2 py-2 text-xs text-muted-foreground">No items in this category yet.</p>
@@ -64,5 +64,4 @@ export function MenuPanel() {
       </div>
     </aside>
   );
-    }
-            
+}
