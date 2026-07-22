@@ -2,10 +2,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { Check, X, Clock, ChefHat, Bell } from "lucide-react";
 import { useCart, cartTotal } from "@/lib/cart-store";
-import { formatNaira } from "@/lib/menu-data";
-import { supabase } from "@/lib/supabase";
+import { supabase, formatCurrency, type Restaurant } from "@/lib/supabase";
 
-const SUPABASE_ANON_KEY = "sb_publishable_Y9tXxkosMHkUmlYBQdO4Pw_bxclggIC";
+const SUPABASE_ANON_KEY = "sb_publishable_6bs0IPax7ctABcDJrcWW5w_3PHfgfvk";
+const CHECKOUT_URL = "https://wxlhhisfexcltjpvcljo.supabase.co/functions/v1/checkout";
 
 type OrderStage = "new" | "preparing" | "ready" | "done";
 
@@ -23,7 +23,15 @@ async function fetchWithRetry(url: string, options: RequestInit, retries = 1): P
   }
 }
 
-export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function CheckoutModal({
+  open,
+  onClose,
+  restaurant,
+}: {
+  open: boolean;
+  onClose: () => void;
+  restaurant: Restaurant;
+}) {
   const entries = useCart((s) => s.entries);
   const name = useCart((s) => s.name);
   const tableNumber = useCart((s) => s.tableNumber);
@@ -55,12 +63,7 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
       .channel(`order-${orderId}`)
       .on(
         "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "orders",
-          filter: `id=eq.${orderId}`,
-        },
+        { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${orderId}` },
         (payload) => {
           const newStatus = (payload.new as { Status?: string }).Status?.toLowerCase();
           if (newStatus === "preparing") setStatus("preparing");
@@ -68,9 +71,7 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
           else if (newStatus === "done") setStatus("done");
         },
       )
-      .subscribe((subStatus) => {
-        setConnected(subStatus === "SUBSCRIBED");
-      });
+      .subscribe((subStatus) => setConnected(subStatus === "SUBSCRIBED"));
 
     return () => {
       supabase.removeChannel(channel);
@@ -82,8 +83,8 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
     setSubmitting(true);
     setError(null);
 
-    if (!Number.isInteger(tableNum) || tableNum < 1 || tableNum > 50) {
-      setError("Please check your table number and try again. Valid table numbers are 1–50.");
+    if (!Number.isInteger(tableNum) || tableNum < 1 || tableNum > restaurant.table_count) {
+      setError(`Please check your table number and try again. Valid table numbers are 1–${restaurant.table_count}.`);
       setSubmitting(false);
       return;
     }
@@ -97,38 +98,31 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
     }));
 
     try {
-      const response = await fetchWithRetry(
-        "https://xyzxvqcezhthphrvtmuo.supabase.co/functions/v1/dynamic-worker",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({
-            orderNumber,
-            name,
-            table_number: tableNum,
-            order,
-            total,
-            currency: "NGN",
-            placedAt: new Date().toISOString(),
-          }),
+      const response = await fetchWithRetry(CHECKOUT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
         },
-      );
+        body: JSON.stringify({
+          restaurantSlug: restaurant.slug,
+          orderNumber,
+          name,
+          table_number: tableNum,
+          order,
+          total,
+          placedAt: new Date().toISOString(),
+        }),
+      });
 
       if (!response.ok) {
         throw new Error(`Checkout failed with status ${response.status}`);
       }
 
       const orderRow = await response.json();
-      if (orderRow?.id) {
-        setOrderId(orderRow.id);
-      }
-      if (orderRow?.public_code) {
-        setOrderCode(orderRow.public_code);
-      }
+      if (orderRow?.id) setOrderId(orderRow.id);
+      if (orderRow?.public_code) setOrderCode(orderRow.public_code);
 
       setPlaced(true);
       setStatus("new");
@@ -199,11 +193,7 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
                       transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
                       className="grid h-20 w-20 place-items-center rounded-full bg-secondary text-foreground"
                     >
-                      {status === "preparing" ? (
-                        <ChefHat className="h-10 w-10" />
-                      ) : (
-                        <Clock className="h-10 w-10" />
-                      )}
+                      {status === "preparing" ? <ChefHat className="h-10 w-10" /> : <Clock className="h-10 w-10" />}
                     </motion.div>
                     <h3 className="mt-4 text-2xl font-extrabold text-foreground">
                       Table {tableNum} · {status === "preparing" ? "Preparing your meal" : "Order received"}
@@ -241,11 +231,11 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-semibold text-foreground">{g.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {formatNaira(g.price)} × {g.qty}
+                          {formatCurrency(g.price, restaurant.currency)} × {g.qty}
                         </p>
                       </div>
                       <p className="text-sm font-bold text-foreground">
-                        {formatNaira(g.price * g.qty)}
+                        {formatCurrency(g.price * g.qty, restaurant.currency)}
                       </p>
                     </div>
                   ))}
@@ -257,7 +247,9 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
                   </div>
                   <div className="flex items-baseline justify-between">
                     <span className="text-sm font-medium text-muted-foreground">Total</span>
-                    <span className="text-2xl font-extrabold text-foreground">{formatNaira(total)}</span>
+                    <span className="text-2xl font-extrabold text-foreground">
+                      {formatCurrency(total, restaurant.currency)}
+                    </span>
                   </div>
                 </div>
                 {error && (
@@ -281,4 +273,4 @@ export function CheckoutModal({ open, onClose }: { open: boolean; onClose: () =>
       )}
     </AnimatePresence>
   );
-    }
+}
