@@ -1,17 +1,36 @@
 import { createClient } from "@supabase/supabase-js";
 
-const SUPABASE_URL = "https://xyzxvqcezhthphrvtmuo.supabase.co";
-const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh5enh2cWNlemh0aHBocnZ0bXVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwNTU2ODAsImV4cCI6MjA5OTYzMTY4MH0.DyhMs63nhYwwbd8Ezb0_Hr3d-2c9sTeZ6phLe-Cf5hg";
+const SUPABASE_URL = "https://wxlhhisfexcltjpvcljo.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_6bs0IPax7ctABcDJrcWW5w_3PHfgfvk";
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  export type RepublicDataRow = {
-  id: number | string;
-  created_at: string;
-  Name: string | null;
-  Order: string | null;
-  Amount: number | null;
-  Status: string | null;
-  table_number: number | null;
+export interface Restaurant {
+  id: number;
+  name: string;
+  slug: string;
+  currency: string;
+  table_count: number;
+  order_code_prefix: string;
+  is_active: boolean;
+}
+
+// Customers are anonymous — RLS does NOT auto-scope anon queries to a single
+// restaurant the way it does for logged-in staff. Every query in this app
+// must explicitly filter by the resolved restaurant_id.
+export async function resolveRestaurant(slug: string): Promise<Restaurant | null> {
+  const { data, error } = await supabase
+    .from("restaurants")
+    .select("id, name, slug, currency, table_count, order_code_prefix, is_active")
+    .eq("slug", slug)
+    .eq("is_active", true)
+    .single();
+  if (error || !data) return null;
+  return data as Restaurant;
+}
+
+export const formatCurrency = (n: number, currency = "NGN") => {
+  const symbols: Record<string, string> = { NGN: "₦", USD: "$", GBP: "£", EUR: "€" };
+  const symbol = symbols[currency] ?? currency + " ";
+  return `${symbol}${n.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
