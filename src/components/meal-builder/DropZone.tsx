@@ -4,13 +4,13 @@ import { AnimatePresence, motion } from "framer-motion";
 import { X, ShoppingBag, Sparkles } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useCart, cartTotal, type CartEntry } from "@/lib/cart-store";
-import { formatNaira } from "@/lib/menu-data";
+import { formatCurrency } from "@/lib/supabase";
 
 const MIN_ORDER = 3000;
 const EXTRA_FEE = 400;
 export const ITEM_SIZE = 76; // px
 
-function TrayItem({ entry }: { entry: CartEntry }) {
+function TrayItem({ entry, currency }: { entry: CartEntry; currency: string }) {
   const remove = useCart((s) => s.remove);
   const entries = useCart((s) => s.entries);
   const restore = useCart((s) => s.restore);
@@ -24,7 +24,7 @@ function TrayItem({ entry }: { entry: CartEntry }) {
     remove(entry.uid);
     const { toast } = await import("sonner");
     toast(`${entry.item.name} removed`, {
-      description: formatNaira(entry.item.price),
+      description: formatCurrency(entry.item.price, currency),
       action: {
         label: "Undo",
         onClick: () => restore(entry, idx),
@@ -69,7 +69,7 @@ function TrayItem({ entry }: { entry: CartEntry }) {
             ? "cursor-grabbing"
             : "cursor-grab"
         }`}
-        aria-label={`${entry.item.name}, ${formatNaira(entry.item.price)}. Drag to reposition. Swipe left or right to remove.`}
+        aria-label={`${entry.item.name}, ${formatCurrency(entry.item.price, currency)}. Drag to reposition. Swipe left or right to remove.`}
       >
         {entry.item.image ? (
           <img
@@ -102,7 +102,7 @@ function TrayItem({ entry }: { entry: CartEntry }) {
   );
 }
 
-export function DropZone() {
+export function DropZone({ currency = "NGN" }: { currency?: string }) {
   const { isOver, setNodeRef } = useDroppable({ id: "meal-tray" });
   const entries = useCart((s) => s.entries);
   const move = useCart((s) => s.move);
@@ -193,7 +193,7 @@ export function DropZone() {
 
           <AnimatePresence>
             {entries.map((e) => (
-              <TrayItem key={e.uid} entry={e} />
+              <TrayItem key={e.uid} entry={e} currency={currency} />
             ))}
           </AnimatePresence>
         </motion.div>
@@ -208,7 +208,7 @@ export function DropZone() {
             animate={{ scale: 1 }}
             className="text-2xl font-extrabold text-foreground"
           >
-            {formatNaira(total)}
+            {formatCurrency(total, currency)}
           </motion.span>
         </div>
       </div>
