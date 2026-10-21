@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { supabase, isPlatformAdmin, type PlatformOverviewRow, type PlatformSummary } from "@/lib/supabase";
 
+type PlanDraft = { id: string; code: "starter" | "growth" | "pro"; name: string; description: string; monthlyPriceNaira: string; isActive: boolean; featuresJson: string; limitsJson: string; displayOrder: number };
+
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [{ title: "Menu-Wave — Super Admin" }] }),
   component: SuperAdminPage,
@@ -18,6 +20,10 @@ function SuperAdminPage() {
   const [restaurants, setRestaurants] = useState<PlatformOverviewRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<number | null>(null);
+  const [plans, setPlans] = useState<PlanDraft[]>([]);
+  const [trialDays, setTrialDays] = useState("14");
+  const [savingBilling, setSavingBilling] = useState(false);
+  const [billingMessage, setBillingMessage] = useState<string | null>(null);
 
   const checkAuth = useCallback(async () => {
     const { data } = await supabase.auth.getSession();
@@ -50,6 +56,83 @@ function SuperAdminPage() {
   useEffect(() => {
     if (authorized) loadData();
   }, [authorized, loadData]);
+
+  const loadBillingConfig = useCallback(async () => {
+    const [plansRes, settingRes] = await Promise.all([
+      supabase.from("subscription_plans").select("*").order("display_order"),
+      supabase.from("platform_settings").select("value").eq("key", "trial_duration_days").single(),
+    ]);
+    if (plansRes.error) setError(`Could not load plans: ${plansRes.error.message}`);
+    if (settingRes.error) setError(`Could not load trial settings: ${settingRes.error.message}`);
+    if (plansRes.data) {
+      setPlans(plansRes.data.map((p: any) => ({
+        id: p.id,
+        code: p.code,
+        name: p.name,
+        description: p.description ?? "",
+        monthlyPriceNaira: p.monthly_price_kobo == null ? "" : String(Number(p.monthly_price_kobo) / 100),
+        isActive: Boolean(p.is_active),
+        featuresJson: JSON.stringify(p.features ?? {}, null, 2),
+        limitsJson: JSON.stringify(p.limits ?? {}, null, 2),
+        displayOrder: Number(p.display_order ?? 0),
+      })));
+    }
+    if (settingRes.data) setTrialDays(String(Number(settingRes.data.value)));
+  }, []);
+
+  useEffect(() => {
+    if (authorized) loadBillingConfig();
+  }, [authorized, loadBillingConfig]);
+
+  const updatePlanDraft = (code: PlanDraft["code"], patch: Partial<PlanDraft>) => {
+    setPlans((current) => current.map((p) => p.code === code ? { ...p, ...patch } : p));
+  };
+
+  const savePlan = async (plan: PlanDraft) => {
+    setSavingBilling(true);
+    setBillingMessage(null);
+    try {
+      const priceNaira = plan.monthlyPriceNaira.trim() === "" ? null : Number(plan.monthlyPriceNaira);
+      if (priceNaira !== null && (!Number.isFinite(priceNaira) || priceNaira <= 0)) throw new Error("Enter a valid monthly price greater than zero, or leave it blank.");
+      if (plan.isActive && priceNaira === null) throw new Error("Set a monthly price before publishing this plan.");
+      const features = JSON.parse(plan.featuresJson || "{}");
+      const limits = JSON.parse(plan.limitsJson || "{}");
+      if (!features || Array.isArray(features) || typeof features !== "object") throw new Error("Features must be a JSON object.");
+      if (!limits || Array.isArray(limits) || typeof limits !== "object") throw new Error("Limits must be a JSON object.");
+      const { error } = await supabase.from("subscription_plans").update({
+        name: plan.name.trim(), description: plan.description.trim(),
+        monthly_price_kobo: priceNaira === null ? null : Math.round(priceNaira * 100),
+        is_active: plan.isActive, features, limits, display_order: plan.displayOrder,
+        updated_at: new Date().toISOString(),
+      }).eq("id", plan.id);
+      if (error) throw error;
+      setBillingMessage(`${plan.name} saved successfully.`);
+      await loadBillingConfig();
+    } catch (e) {
+      setBillingMessage(e instanceof Error ? e.message : "Could not save this plan.");
+    } finally {
+      setSavingBilling(false);
+    }
+  };
+
+  const saveTrialDuration = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingBilling(true);
+    setBillingMessage(null);
+    const days = Number(trialDays);
+    if (!Number.isInteger(days) || days < 1 || days > 365) {
+      setBillingMessage("Trial duration must be a whole number from 1 to 365 days.");
+      setSavingBilling(false);
+      return;
+    }
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase.from("platform_settings").update({
+      value: days, updated_at: new Date().toISOString(), updated_by: user?.id ?? null,
+    }).eq("key", "trial_duration_days");
+    setSavingBilling(false);
+    if (error) setBillingMessage(`Could not save trial duration: ${error.message}`);
+    else setBillingMessage(`Default trial duration updated to ${days} days. This applies to new trials only.`);
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -163,6 +246,37 @@ function SuperAdminPage() {
             </>
           )}
         </div>
+
+        <section className="space-y-5 rounded-2xl border border-slate-800 bg-slate-900 p-5">
+          <div>
+            <h2 className="text-base font-bold">Billing configuration</h2>
+            <p className="mt-1 text-sm text-slate-400">Changes here are stored in Supabase and used by onboarding. Existing trials keep their recorded end date.</p>
+          </div>
+          <form onSubmit={saveTrialDuration} className="flex flex-col gap-3 rounded-xl border border-slate-800 bg-slate-950 p-4 sm:flex-row sm:items-end">
+            <label className="flex-1 text-sm font-medium text-slate-300">Default trial duration (days)
+              <input type="number" min="1" max="365" step="1" value={trialDays} onChange={(e) => setTrialDays(e.target.value)} className="mt-1 block w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-white" required />
+            </label>
+            <button type="submit" disabled={savingBilling} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">Save trial setting</button>
+          </form>
+          <div className="grid gap-4 lg:grid-cols-3">
+            {plans.map((plan) => (
+              <div key={plan.id} className="space-y-3 rounded-xl border border-slate-800 bg-slate-950 p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="font-bold">{plan.code.toUpperCase()}</h3>
+                  <label className="flex items-center gap-2 text-xs text-slate-300"><input type="checkbox" checked={plan.isActive} onChange={(e) => updatePlanDraft(plan.code, { isActive: e.target.checked })} /> Published</label>
+                </div>
+                <label className="block text-xs text-slate-400">Display name<input value={plan.name} onChange={(e) => updatePlanDraft(plan.code, { name: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white" required /></label>
+                <label className="block text-xs text-slate-400">Monthly price (NGN)<input type="number" min="0.01" step="0.01" value={plan.monthlyPriceNaira} onChange={(e) => updatePlanDraft(plan.code, { monthlyPriceNaira: e.target.value })} placeholder="Leave blank to keep unpublished" className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white" /></label>
+                <label className="block text-xs text-slate-400">Description<textarea value={plan.description} onChange={(e) => updatePlanDraft(plan.code, { description: e.target.value })} rows={2} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white" /></label>
+                <label className="block text-xs text-slate-400">Features (JSON)<textarea value={plan.featuresJson} onChange={(e) => updatePlanDraft(plan.code, { featuresJson: e.target.value })} rows={5} spellCheck={false} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 font-mono text-xs text-white" /></label>
+                <label className="block text-xs text-slate-400">Limits (JSON)<textarea value={plan.limitsJson} onChange={(e) => updatePlanDraft(plan.code, { limitsJson: e.target.value })} rows={4} spellCheck={false} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 font-mono text-xs text-white" /></label>
+                <button type="button" onClick={() => savePlan(plan)} disabled={savingBilling} className="w-full rounded-lg bg-blue-600 px-3 py-2 text-sm font-bold text-white disabled:opacity-50">Save {plan.code} plan</button>
+              </div>
+            ))}
+          </div>
+          {billingMessage && <p role="status" className="rounded-lg bg-slate-800 px-3 py-2 text-sm text-slate-200">{billingMessage}</p>}
+          <p className="text-xs text-amber-300">Plan prices are saved in kobo for Paystack. Feature and limit JSON values are configuration only until backend enforcement is implemented in the next stage.</p>
+        </section>
 
         <section className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
           <h2 className="mb-4 text-base font-bold">Restaurants ({restaurants.length})</h2>
