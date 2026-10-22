@@ -1,0 +1,88 @@
+
+name: Fix TanStack security lockfile
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-lockfile:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Regenerate dependency lockfile
+        run: bun install
+
+      - name: Verify patched TanStack versions
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+
+          const packages = [
+            {
+              name: '@tanstack/react-start',
+              minimum: [1, 168, 60]
+            },
+            {
+              name: '@tanstack/start-server-core',
+              minimum: [1, 169, 39]
+            }
+          ];
+
+          function compareVersions(a, b) {
+            const av = a.split('.').map(Number);
+            const bv = b;
+            for (let i = 0; i < 3; i++) {
+              if ((av[i] || 0) !== (bv[i] || 0)) {
+                return (av[i] || 0) - (bv[i] || 0);
+              }
+            }
+            return 0;
+          }
+
+          for (const pkg of packages) {
+            const file = `node_modules/${pkg.name}/package.json`;
+
+            if (!fs.existsSync(file)) {
+              console.error(`Missing installed package: ${pkg.name}`);
+              process.exit(1);
+            }
+
+            const version = JSON.parse(
+              fs.readFileSync(file, 'utf8')
+            ).version;
+
+            console.log(`${pkg.name}: ${version}`);
+
+            if (compareVersions(version, pkg.minimum) < 0) {
+              console.error(
+                `${pkg.name} is below the required patched version.`
+              );
+              process.exit(1);
+            }
+          }
+          NODE
+
+      - name: Commit updated lockfile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add bun.lock
+          if git diff --cached --quiet; then
+            echo "No lockfile changes to commit."
+          else
+            git commit -m "fix: update vulnerable TanStack dependencies"
+            git push origin main
+          fi
